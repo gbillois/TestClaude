@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Cybersécurité</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0a0e1a;
+      color: #e0e6f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 760px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .header h1 {
+      font-size: 2rem;
+      color: #00d4ff;
+      text-shadow: 0 0 20px rgba(0,212,255,.4);
+      letter-spacing: 2px;
+    }
+    .header p {
+      color: #7a8ba8;
+      margin-top: 8px;
+      font-size: .95rem;
+    }
+    .shield-icon { font-size: 3rem; margin-bottom: 10px; }
+
+    /* ── CARD ── */
+    .card {
+      background: #111827;
+      border: 1px solid #1e2d40;
+      border-radius: 16px;
+      padding: 36px 40px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.5);
+    }
+
+    /* ── PROGRESS ── */
+    .progress-bar-wrap {
+      background: #1e2d40;
+      border-radius: 99px;
+      height: 8px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #00d4ff, #7b61ff);
+      border-radius: 99px;
+      transition: width .4s ease;
+    }
+    .progress-label {
+      font-size: .82rem;
+      color: #7a8ba8;
+      text-align: right;
+      margin-bottom: 28px;
+    }
+
+    /* ── QUESTION ── */
+    .question-num {
+      font-size: .8rem;
+      color: #00d4ff;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 10px;
+    }
+    .question-text {
+      font-size: 1.15rem;
+      font-weight: 600;
+      line-height: 1.6;
+      margin-bottom: 28px;
+      color: #dce8f5;
+    }
+
+    /* ── OPTIONS ── */
+    .options { display: flex; flex-direction: column; gap: 12px; }
+
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      border: 1.5px solid #1e2d40;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all .2s;
+      background: #0d1520;
+      user-select: none;
+    }
+    .option:hover:not(.disabled) {
+      border-color: #00d4ff;
+      background: #0f2035;
+      transform: translateX(4px);
+    }
+    .option.selected { border-color: #7b61ff; background: #1a1440; }
+    .option.correct  { border-color: #22c55e; background: #0a2318; color: #4ade80; }
+    .option.wrong    { border-color: #ef4444; background: #2a0e0e; color: #f87171; }
+    .option.reveal   { border-color: #22c55e; background: #0a2318; color: #4ade80; }
+    .option.disabled { cursor: default; }
+
+    .option-letter {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: #1e2d40;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700;
+      flex-shrink: 0;
+      transition: background .2s;
+    }
+    .option.correct  .option-letter { background: #22c55e; color: #fff; }
+    .option.wrong    .option-letter { background: #ef4444; color: #fff; }
+    .option.reveal   .option-letter { background: #22c55e; color: #fff; }
+    .option-text { font-size: .95rem; }
+
+    /* ── FEEDBACK ── */
+    .feedback {
+      margin-top: 20px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-size: .9rem;
+      line-height: 1.5;
+      display: none;
+    }
+    .feedback.show { display: block; }
+    .feedback.correct-fb { background: #0a2318; border: 1px solid #22c55e; color: #4ade80; }
+    .feedback.wrong-fb   { background: #2a0e0e; border: 1px solid #ef4444; color: #f87171; }
+
+    /* ── BUTTONS ── */
+    .btn-wrap { margin-top: 30px; display: flex; justify-content: flex-end; }
+    .btn {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: .5px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #00d4ff, #7b61ff);
+      color: #fff;
+    }
+    .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .35; cursor: default; transform: none; }
+
+    /* ── SCORE SCREEN ── */
+    .score-screen { text-align: center; }
+    .score-circle {
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      border: 6px solid;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      margin: 0 auto 28px;
+      position: relative;
+    }
+    .score-circle .score-num {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .score-circle .score-total {
+      font-size: .9rem;
+      color: #7a8ba8;
+    }
+
+    .grade-S { border-color: #ffd700; color: #ffd700; }
+    .grade-A { border-color: #22c55e; color: #22c55e; }
+    .grade-B { border-color: #00d4ff; color: #00d4ff; }
+    .grade-C { border-color: #f59e0b; color: #f59e0b; }
+    .grade-D { border-color: #ef4444; color: #ef4444; }
+
+    .grade-label {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .grade-msg {
+      font-size: 1rem;
+      color: #7a8ba8;
+      margin-bottom: 28px;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    .score-breakdown {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-bottom: 30px;
+    }
+    .breakdown-item { text-align: center; }
+    .breakdown-item .val {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+    .breakdown-item .lbl { font-size: .78rem; color: #7a8ba8; text-transform: uppercase; letter-spacing: 1px; }
+    .val.green { color: #22c55e; }
+    .val.red   { color: #ef4444; }
+
+    .btn-restart {
+      background: #1e2d40;
+      color: #e0e6f0;
+      border: 1px solid #2d4a6a;
+      margin-right: 12px;
+    }
+    .btn-restart:hover { background: #263d57; }
+
+    /* ── START SCREEN ── */
+    .start-screen { text-align: center; }
+    .start-screen h2 { font-size: 1.4rem; color: #dce8f5; margin-bottom: 16px; }
+    .start-screen p  { color: #7a8ba8; line-height: 1.7; margin-bottom: 28px; }
+    .tag-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 30px; }
+    .tag {
+      padding: 5px 14px;
+      border-radius: 99px;
+      background: #1e2d40;
+      border: 1px solid #2d4a6a;
+      font-size: .82rem;
+      color: #7a8ba8;
+    }
+
+    /* ── REVIEW ── */
+    .review-section { margin-top: 36px; text-align: left; }
+    .review-section h3 { color: #00d4ff; margin-bottom: 16px; font-size: 1rem; }
+    .review-item {
+      padding: 14px 18px;
+      border-radius: 10px;
+      border: 1px solid #1e2d40;
+      margin-bottom: 10px;
+      background: #0d1520;
+    }
+    .review-item .q-text { font-size: .88rem; color: #9ab; margin-bottom: 6px; }
+    .review-item .r-row { font-size: .88rem; }
+    .review-item .r-your { color: #f87171; }
+    .review-item .r-correct { color: #4ade80; }
+    .review-item .r-ok { color: #4ade80; }
+
+    @media (max-width: 560px) {
+      .card { padding: 24px 20px; }
+      .header h1 { font-size: 1.5rem; }
+      .score-breakdown { gap: 18px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="shield-icon">🔐</div>
+    <h1>Quiz Cybersécurité</h1>
+    <p>Testez vos connaissances en sécurité informatique</p>
+  </div>
+
+  <div class="card" id="card">
+
+    <!-- START SCREEN -->
+    <div class="start-screen" id="startScreen">
+      <h2>Prêt à relever le défi ?</h2>
+      <p>10 questions sélectionnées aléatoirement parmi 30, couvrant les grands domaines de la cybersécurité.</p>
+      <div class="tag-list">
+        <span class="tag">Mots de passe</span>
+        <span class="tag">Phishing</span>
+        <span class="tag">Chiffrement</span>
+        <span class="tag">Réseaux</span>
+        <span class="tag">Malwares</span>
+        <span class="tag">RGPD</span>
+        <span class="tag">Protocoles</span>
+        <span class="tag">Authentification</span>
+      </div>
+      <div class="btn-wrap" style="justify-content:center">
+        <button class="btn btn-primary" onclick="startQuiz()">Démarrer le quiz →</button>
+      </div>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="quizScreen" style="display:none">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-label" id="progressLabel"></div>
+
+      <div class="question-num" id="questionNum"></div>
+      <div class="question-text" id="questionText"></div>
+      <div class="options" id="optionsContainer"></div>
+      <div class="feedback" id="feedback"></div>
+
+      <div class="btn-wrap">
+        <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>Suivant →</button>
+      </div>
+    </div>
+
+    <!-- SCORE SCREEN -->
+    <div id="scoreScreen" style="display:none" class="score-screen">
+      <div class="score-circle" id="scoreCircle">
+        <div class="score-num" id="scoreNum"></div>
+        <div class="score-total">/ 10</div>
+      </div>
+      <div class="grade-label" id="gradeLabel"></div>
+      <div class="grade-msg" id="gradeMsg"></div>
+
+      <div class="score-breakdown">
+        <div class="breakdown-item">
+          <div class="val green" id="correctCount"></div>
+          <div class="lbl">Bonnes réponses</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="val red" id="wrongCount"></div>
+          <div class="lbl">Mauvaises réponses</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="val" id="pctVal" style="color:#00d4ff"></div>
+          <div class="lbl">Score</div>
+        </div>
+      </div>
+
+      <div class="btn-wrap" style="justify-content:center">
+        <button class="btn btn-restart" onclick="restartQuiz()">🔄 Rejouer</button>
+        <button class="btn btn-primary" onclick="toggleReview()">📋 Voir les réponses</button>
+      </div>
+
+      <div class="review-section" id="reviewSection" style="display:none">
+        <h3>Récapitulatif des questions</h3>
+        <div id="reviewList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ALL_QUESTIONS = [
+  {
+    q: "Qu'est-ce qu'une attaque de phishing ?",
+    opts: [
+      "Une attaque exploitant une faille réseau",
+      "Une tentative de tromper un utilisateur pour lui soutirer des informations via un faux message",
+      "Un logiciel malveillant qui chiffre les fichiers",
+      "Une attaque par déni de service"
+    ],
+    a: 1,
+    expl: "Le phishing consiste à se faire passer pour une entité de confiance (banque, service en ligne…) pour voler des identifiants, mots de passe ou données bancaires."
+  },
+  {
+    q: "Quelle longueur minimale est recommandée pour un mot de passe solide selon l'ANSSI ?",
+    opts: ["6 caractères", "8 caractères", "12 caractères", "20 caractères"],
+    a: 2,
+    expl: "L'ANSSI recommande un minimum de 12 caractères, combinant majuscules, minuscules, chiffres et caractères spéciaux pour un usage courant."
+  },
+  {
+    q: "Que signifie l'acronyme HTTPS ?",
+    opts: [
+      "HyperText Transfer Protocol Secure",
+      "High Transfer Text Protocol System",
+      "HyperText Transmission Protocol Standard",
+      "Hosted Text Transfer Protocol Secure"
+    ],
+    a: 0,
+    expl: "HTTPS est la version sécurisée de HTTP. Il utilise TLS/SSL pour chiffrer les communications entre le navigateur et le serveur."
+  },
+  {
+    q: "Qu'est-ce qu'un ransomware ?",
+    opts: [
+      "Un logiciel espion qui enregistre les frappes clavier",
+      "Un logiciel malveillant qui chiffre vos fichiers et demande une rançon",
+      "Un programme de surveillance réseau",
+      "Un outil d'audit de sécurité"
+    ],
+    a: 1,
+    expl: "Le ransomware (ou rançongiciel) chiffre les données de la victime et exige le paiement d'une rançon, souvent en cryptomonnaie, pour en restaurer l'accès."
+  },
+  {
+    q: "Qu'est-ce que l'authentification à deux facteurs (2FA) ?",
+    opts: [
+      "Utiliser deux mots de passe différents",
+      "Se connecter depuis deux appareils simultanément",
+      "Combiner deux facteurs d'authentification distincts (ex : mot de passe + code SMS)",
+      "Chiffrer les données deux fois"
+    ],
+    a: 2,
+    expl: "Le 2FA ajoute une couche de sécurité en exigeant deux preuves d'identité : quelque chose que vous savez (mot de passe) et quelque chose que vous possédez (téléphone, token)."
+  },
+  {
+    q: "Qu'est-ce qu'une attaque DDoS ?",
+    opts: [
+      "Une intrusion discrète dans un système pour voler des données",
+      "Une attaque qui submerge un serveur de requêtes pour le rendre indisponible",
+      "Un logiciel qui intercepte les communications réseau",
+      "Une tentative de deviner un mot de passe par force brute"
+    ],
+    a: 1,
+    expl: "DDoS (Distributed Denial of Service) consiste à inonder un serveur de trafic depuis de nombreuses sources (botnet) pour le rendre inaccessible aux utilisateurs légitimes."
+  },
+  {
+    q: "Quel protocole est utilisé pour sécuriser les connexions SSH ?",
+    opts: ["SSL", "TLS", "Cryptographie asymétrique (RSA/Ed25519)", "WPA2"],
+    a: 2,
+    expl: "SSH utilise la cryptographie asymétrique (paires clé publique/privée) pour authentifier les parties et chiffrer la session. RSA et Ed25519 sont les algorithmes courants."
+  },
+  {
+    q: "Qu'est-ce qu'une injection SQL ?",
+    opts: [
+      "Un virus qui s'injecte dans la mémoire vive",
+      "Une technique d'attaque qui insère du code SQL malveillant dans une requête",
+      "Un outil de sauvegarde de base de données",
+      "Un protocole de réplication de données"
+    ],
+    a: 1,
+    expl: "L'injection SQL exploite une validation insuffisante des entrées utilisateur pour insérer des commandes SQL arbitraires, pouvant mener à la fuite ou à la destruction de données."
+  },
+  {
+    q: "Que signifie le RGPD ?",
+    opts: [
+      "Règlement Général sur la Protection des Données",
+      "Réseau Gouvernemental de Protection Digitale",
+      "Règles Générales de Prévention des Données",
+      "Registre Général des Protocoles de Défense"
+    ],
+    a: 0,
+    expl: "Le RGPD est le règlement européen (en vigueur depuis 2018) qui encadre la collecte, le traitement et la protection des données personnelles des citoyens de l'UE."
+  },
+  {
+    q: "Qu'est-ce qu'un certificat SSL/TLS ?",
+    opts: [
+      "Un fichier de configuration réseau",
+      "Un document numérique qui authentifie l'identité d'un serveur et chiffre les échanges",
+      "Un mot de passe chiffré stocké sur le serveur",
+      "Un journal d'événements de sécurité"
+    ],
+    a: 1,
+    expl: "Un certificat SSL/TLS est émis par une autorité de certification (CA). Il contient la clé publique du serveur et prouve son identité, permettant d'établir une connexion chiffrée."
+  },
+  {
+    q: "Qu'est-ce qu'un VPN ?",
+    opts: [
+      "Un antivirus en ligne",
+      "Un réseau privé virtuel qui chiffre vos communications et masque votre IP",
+      "Un protocole de partage de fichiers",
+      "Un système de détection d'intrusion"
+    ],
+    a: 1,
+    expl: "Un VPN (Virtual Private Network) crée un tunnel chiffré entre votre appareil et un serveur distant, protégeant vos données et masquant votre adresse IP réelle."
+  },
+  {
+    q: "Quelle est la principale différence entre un virus et un ver informatique ?",
+    opts: [
+      "Un virus chiffre les fichiers, un ver les supprime",
+      "Un virus nécessite un fichier hôte pour se propager, un ver se propage seul via le réseau",
+      "Un ver est plus dangereux qu'un virus",
+      "Il n'y a aucune différence, ce sont des synonymes"
+    ],
+    a: 1,
+    expl: "Un virus s'attache à un fichier existant et se propage quand ce fichier est exécuté. Un ver est autonome et exploite des vulnérabilités réseau pour se répliquer sans intervention humaine."
+  },
+  {
+    q: "Qu'est-ce que le principe du moindre privilège ?",
+    opts: [
+      "N'accorder aux utilisateurs que les droits strictement nécessaires à leurs tâches",
+      "Interdire tous les accès par défaut",
+      "Donner les droits administrateur à tous les employés",
+      "Chiffrer tous les fichiers avec le moins de ressources possible"
+    ],
+    a: 0,
+    expl: "Le principe du moindre privilège (PoLP) limite les accès de chaque utilisateur/processus au strict minimum nécessaire, réduisant la surface d'attaque en cas de compromission."
+  },
+  {
+    q: "Qu'est-ce que le chiffrement de bout en bout (E2EE) ?",
+    opts: [
+      "Un chiffrement appliqué uniquement au stockage",
+      "Un mécanisme où seuls l'expéditeur et le destinataire peuvent lire les messages",
+      "Un protocole de sauvegarde sécurisée",
+      "Un algorithme de compression des données"
+    ],
+    a: 1,
+    expl: "En E2EE, les messages sont chiffrés côté expéditeur et ne peuvent être déchiffrés que par le destinataire. Même le fournisseur de service ne peut pas lire les communications."
+  },
+  {
+    q: "Qu'est-ce qu'un pare-feu (firewall) ?",
+    opts: [
+      "Un logiciel antivirus avancé",
+      "Un système qui filtre le trafic réseau selon des règles de sécurité",
+      "Un outil de chiffrement des disques durs",
+      "Un protocole de sauvegarde automatique"
+    ],
+    a: 1,
+    expl: "Un pare-feu surveille et contrôle le trafic réseau entrant et sortant selon des règles prédéfinies, formant une barrière entre un réseau de confiance et des réseaux non fiables."
+  },
+  {
+    q: "Qu'est-ce qu'une CVE ?",
+    opts: [
+      "Un outil de gestion des mots de passe",
+      "Un standard d'identification des vulnérabilités connues (Common Vulnerabilities and Exposures)",
+      "Un protocole de chiffrement développé par NIST",
+      "Un certificat de conformité européen"
+    ],
+    a: 1,
+    expl: "CVE est un système de référencement des vulnérabilités de sécurité. Chaque vulnérabilité connue reçoit un identifiant unique (ex : CVE-2021-44228 pour Log4Shell)."
+  },
+  {
+    q: "Qu'est-ce qu'une attaque de type 'Man-in-the-Middle' (MitM) ?",
+    opts: [
+      "Une attaque physique sur un serveur",
+      "Un attaquant qui s'interpose secrètement entre deux parties qui communiquent",
+      "Un logiciel malveillant caché dans un document Office",
+      "Une tentative de connexion par force brute"
+    ],
+    a: 1,
+    expl: "Dans une attaque MitM, l'attaquant intercepte et peut modifier les communications entre deux parties à leur insu, permettant l'écoute ou la manipulation des échanges."
+  },
+  {
+    q: "Quel algorithme de hachage est aujourd'hui considéré comme sûr pour les mots de passe ?",
+    opts: ["MD5", "SHA-1", "bcrypt / Argon2", "Base64"],
+    a: 2,
+    expl: "MD5 et SHA-1 sont obsolètes pour les mots de passe. bcrypt et Argon2 sont conçus pour être lents et coûteux en ressources, rendant les attaques par force brute très difficiles."
+  },
+  {
+    q: "Qu'est-ce qu'une attaque par force brute ?",
+    opts: [
+      "Une intrusion physique dans un datacenter",
+      "Une tentative systématique de toutes les combinaisons possibles pour trouver un mot de passe",
+      "Un déni de service par saturation physique",
+      "Une exploitation de faille mémoire"
+    ],
+    a: 1,
+    expl: "L'attaque par force brute teste automatiquement toutes les combinaisons possibles de caractères jusqu'à trouver le bon mot de passe. La complexité et la longueur du mot de passe l'en protègent."
+  },
+  {
+    q: "Qu'est-ce que le 'social engineering' (ingénierie sociale) ?",
+    opts: [
+      "L'utilisation de réseaux sociaux pour la publicité ciblée",
+      "La manipulation psychologique d'individus pour obtenir des informations confidentielles",
+      "Un framework de développement sécurisé",
+      "Un outil d'analyse des comportements utilisateurs"
+    ],
+    a: 1,
+    expl: "L'ingénierie sociale exploite la psychologie humaine (confiance, peur, urgence) plutôt que les failles techniques. Le phishing, le pretexting et le baiting en sont des exemples."
+  },
+  {
+    q: "Qu'est-ce qu'un gestionnaire de mots de passe ?",
+    opts: [
+      "Un logiciel qui génère des mots de passe et les stocke de façon chiffrée",
+      "Un registre Windows qui stocke les mots de passe en clair",
+      "Un protocole d'authentification réseau",
+      "Un système d'administration des comptes Active Directory"
+    ],
+    a: 0,
+    expl: "Un gestionnaire de mots de passe (Bitwarden, 1Password, KeePass…) génère, stocke et auto-remplit des mots de passe uniques et complexes, protégés par un seul mot de passe maître."
+  },
+  {
+    q: "Qu'est-ce qu'un test d'intrusion (pentest) ?",
+    opts: [
+      "Une attaque illégale menée par des hackers",
+      "Une simulation d'attaque autorisée pour identifier les vulnérabilités d'un système",
+      "Un audit de conformité RGPD",
+      "Un test de performance réseau"
+    ],
+    a: 1,
+    expl: "Le pentest est une évaluation de sécurité officielle où des experts simulent des attaques réelles pour découvrir les vulnérabilités avant que des acteurs malveillants ne les exploitent."
+  },
+  {
+    q: "Que signifie 'Zero Trust' en cybersécurité ?",
+    opts: [
+      "Ne faire confiance à aucun utilisateur ou appareil par défaut, même à l'intérieur du réseau",
+      "Bloquer tout accès externe au réseau de l'entreprise",
+      "Utiliser uniquement des logiciels open source",
+      "Ne jamais stocker de données sensibles"
+    ],
+    a: 0,
+    expl: "Le modèle Zero Trust part du principe qu'aucun utilisateur ou appareil n'est fiable par défaut, y compris en interne. Chaque accès est vérifié continuellement (\"never trust, always verify\")."
+  },
+  {
+    q: "Qu'est-ce qu'un SIEM ?",
+    opts: [
+      "Un standard international de chiffrement",
+      "Un système de gestion des événements et des informations de sécurité",
+      "Un protocole d'authentification multifacteur",
+      "Un logiciel de sauvegarde sécurisée"
+    ],
+    a: 1,
+    expl: "Un SIEM (Security Information and Event Management) collecte, centralise et analyse les journaux d'événements pour détecter des anomalies et des menaces en temps réel."
+  },
+  {
+    q: "Qu'est-ce qu'une politique de patch management ?",
+    opts: [
+      "Une stratégie pour appliquer régulièrement les mises à jour de sécurité des systèmes",
+      "Un processus de sauvegarde des configurations réseau",
+      "Un protocole de réponse aux incidents",
+      "Un système de gestion des licences logicielles"
+    ],
+    a: 0,
+    expl: "Le patch management consiste à identifier, tester et déployer les correctifs de sécurité en temps opportun. De nombreuses attaques exploitent des vulnérabilités pour lesquelles un correctif existait."
+  },
+  {
+    q: "Qu'est-ce que la stéganographie ?",
+    opts: [
+      "Un algorithme de chiffrement symétrique",
+      "La technique de dissimulation d'informations dans un fichier anodin (image, audio…)",
+      "Un protocole de transfert sécurisé de fichiers",
+      "Un outil d'analyse des métadonnées"
+    ],
+    a: 1,
+    expl: "La stéganographie cache des données secrètes dans des fichiers ordinaires (images, sons). Contrairement au chiffrement, l'existence même du message caché n'est pas apparente."
+  },
+  {
+    q: "Qu'est-ce qu'une attaque XSS (Cross-Site Scripting) ?",
+    opts: [
+      "Un script qui exploite des failles de configuration réseau",
+      "L'injection de scripts malveillants dans des pages web vues par d'autres utilisateurs",
+      "Une attaque qui contourne l'authentification par cookies",
+      "Un logiciel malveillant ciblant les sites e-commerce"
+    ],
+    a: 1,
+    expl: "Le XSS permet à un attaquant d'injecter du code JavaScript malveillant dans une page web. Ce code s'exécute chez les visiteurs et peut voler des cookies de session ou rediriger vers des sites malveillants."
+  },
+  {
+    q: "Qu'est-ce qu'un botnet ?",
+    opts: [
+      "Un réseau de robots industriels connectés",
+      "Un ensemble d'ordinateurs infectés contrôlés à distance par un attaquant",
+      "Un protocole de communication entre serveurs",
+      "Un outil de test de charge réseau"
+    ],
+    a: 1,
+    expl: "Un botnet est un réseau de machines compromises (\"bots\" ou \"zombies\") contrôlées à distance par un serveur C&C. Utilisé pour des DDoS, du spam, du minage de cryptomonnaies, etc."
+  },
+  {
+    q: "Que signifie chiffrement symétrique vs asymétrique ?",
+    opts: [
+      "Symétrique = une seule clé partagée ; asymétrique = paire de clés publique/privée",
+      "Symétrique = chiffrement rapide ; asymétrique = chiffrement lent et inutile",
+      "Symétrique est réservé aux entreprises ; asymétrique au grand public",
+      "Il n'y a pas de différence, ce sont deux noms pour le même algorithme"
+    ],
+    a: 0,
+    expl: "Le chiffrement symétrique utilise la même clé pour chiffrer et déchiffrer (AES). L'asymétrique utilise une paire clé publique/privée (RSA). En pratique, on combine souvent les deux (TLS)."
+  },
+  {
+    q: "Qu'est-ce qu'une politique de sécurité BYOD (Bring Your Own Device) ?",
+    opts: [
+      "Une règle interdisant tout appareil personnel au bureau",
+      "Un cadre encadrant l'utilisation d'appareils personnels pour accéder aux ressources professionnelles",
+      "Un protocole de chiffrement pour appareils mobiles",
+      "Un standard de connexion Wi-Fi sécurisé"
+    ],
+    a: 1,
+    expl: "Le BYOD permet aux employés d'utiliser leurs appareils personnels (smartphones, laptops) pour le travail. La politique BYOD définit les règles de sécurité minimales (MDM, chiffrement, séparation des données)."
+  }
+];
+
+const GRADES = [
+  { min: 10, grade: "S", msg: "Score parfait ! Vous êtes un expert en cybersécurité. 🏆", cls: "grade-S" },
+  { min: 8,  grade: "A", msg: "Excellent ! Vous maîtrisez très bien les fondamentaux de la sécurité informatique.", cls: "grade-A" },
+  { min: 6,  grade: "B", msg: "Bon travail ! Quelques lacunes à combler, mais vous avez de solides bases.", cls: "grade-B" },
+  { min: 4,  grade: "C", msg: "Niveau intermédiaire. Pensez à approfondir vos connaissances en cybersécurité.", cls: "grade-C" },
+  { min: 0,  grade: "D", msg: "Des bases à consolider. La cybersécurité est un domaine crucial — explorez nos ressources !", cls: "grade-D" }
+];
+
+let questions = [], current = 0, score = 0, answered = false, results = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  questions = shuffle(ALL_QUESTIONS).slice(0, 10);
+  current = 0; score = 0; results = [];
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('scoreScreen').style.display = 'none';
+  document.getElementById('quizScreen').style.display = 'block';
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[current];
+  const pct = (current / 10) * 100;
+
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `Question ${current + 1} / 10`;
+  document.getElementById('questionNum').textContent = `Question ${current + 1}`;
+  document.getElementById('questionText').textContent = q.q;
+
+  const letters = ['A', 'B', 'C', 'D'];
+  const container = document.getElementById('optionsContainer');
+  container.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.onclick = () => selectAnswer(i);
+    div.innerHTML = `<div class="option-letter">${letters[i]}</div><div class="option-text">${opt}</div>`;
+    container.appendChild(div);
+  });
+
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback';
+  fb.textContent = '';
+
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.disabled = true;
+  nextBtn.textContent = current === 9 ? 'Voir le score →' : 'Suivant →';
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+
+  const q = questions[current];
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(o => o.classList.add('disabled'));
+
+  const isCorrect = idx === q.a;
+  if (isCorrect) score++;
+
+  opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) opts[q.a].classList.add('reveal');
+
+  const fb = document.getElementById('feedback');
+  fb.className = `feedback show ${isCorrect ? 'correct-fb' : 'wrong-fb'}`;
+  fb.textContent = (isCorrect ? '✅ Correct ! ' : '❌ Incorrect. ') + q.expl;
+
+  results.push({ q: q.q, yours: q.opts[idx], correct: q.opts[q.a], ok: isCorrect });
+
+  document.getElementById('nextBtn').disabled = false;
+}
+
+function nextQuestion() {
+  current++;
+  if (current < 10) {
+    renderQuestion();
+  } else {
+    showScore();
+  }
+}
+
+function showScore() {
+  document.getElementById('quizScreen').style.display = 'none';
+  document.getElementById('scoreScreen').style.display = 'block';
+  document.getElementById('reviewSection').style.display = 'none';
+
+  const grade = GRADES.find(g => score >= g.min);
+  const circle = document.getElementById('scoreCircle');
+  circle.className = `score-circle ${grade.cls}`;
+  document.getElementById('scoreNum').textContent = score;
+  document.getElementById('gradeLabel').textContent = `Niveau ${grade.grade}`;
+  document.getElementById('gradeMsg').textContent = grade.msg;
+  document.getElementById('correctCount').textContent = score;
+  document.getElementById('wrongCount').textContent = 10 - score;
+  document.getElementById('pctVal').textContent = (score * 10) + '%';
+}
+
+function restartQuiz() {
+  startQuiz();
+}
+
+function toggleReview() {
+  const sec = document.getElementById('reviewSection');
+  if (sec.style.display === 'none') {
+    buildReview();
+    sec.style.display = 'block';
+  } else {
+    sec.style.display = 'none';
+  }
+}
+
+function buildReview() {
+  const list = document.getElementById('reviewList');
+  list.innerHTML = '';
+  results.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'review-item';
+    if (r.ok) {
+      div.innerHTML = `
+        <div class="q-text">${i + 1}. ${r.q}</div>
+        <div class="r-row r-ok">✅ ${r.correct}</div>`;
+    } else {
+      div.innerHTML = `
+        <div class="q-text">${i + 1}. ${r.q}</div>
+        <div class="r-row r-your">❌ Votre réponse : ${r.yours}</div>
+        <div class="r-row r-correct">✅ Bonne réponse : ${r.correct}</div>`;
+    }
+    list.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
